@@ -23,7 +23,7 @@ export const authOptions = {
       // e.g. domain, username, password, 2FA token, etc.
       // You can pass any HTML attribute to the <input> tag through the object.
       credentials: {
-        ID: { label: "ID", type: "text", placeholder: "a, b, c, d or e" },
+        ID: { label: "ID", type: "text", placeholder: "Ewa or Justin" },
         demo: { label: "Demo", type: "text" }
       },
       async authorize(credentials, req) {
@@ -36,17 +36,23 @@ export const authOptions = {
         let user = null;
         // maps logins to specific demos so non-demo sessions can be logged out
         const demo = UserStore[credentials.demo]
+
         // check all keys in user store
         for (const [key, value] of Object.entries(demo.users)) {
           // find keys that match credential
           if (key.toUpperCase() === credentials.ID.toUpperCase()) {
             // if a match is found store value as user
             user = value;
+            console.log('Found user:', user);
+            user.uaf = user.uaf || {};  // Ensure uaf is initialized
           }
         }
+        console.log('User in JWT callback:', user); // Log the user object
+
         if (user) {
           // add the demo to the user object to see it on the client
           user.demo = credentials.demo;
+          user.uaf = user.uaf || {}; 
           // server-side env vars
           const jwt_client_id = process.env.TABLEAU_JWT_CLIENT_ID;
           const embed_secret = process.env.TABLEAU_EMBED_JWT_SECRET;
@@ -59,14 +65,14 @@ export const authOptions = {
             "tableau:views:embed",
             "tableau:views:embed_authoring",
             "tableau:insights:embed",
-          ];
+           ];
           const embed_options = {
             jwt_secret: embed_secret,
             jwt_secret_id: embed_secret_id,
             jwt_client_id
           };
           const embed_session = new Session(user.name);
-          await embed_session.jwt(user.email, embed_options, embed_scopes);
+          await embed_session.jwt(user.email, embed_options, embed_scopes, user.uaf);
 
           // used for backend HTTP calls
           const rest_scopes = [
@@ -84,7 +90,7 @@ export const authOptions = {
             jwt_client_id
           };
           const rest_session = new Session(user.name);
-          await rest_session.jwt(user.email, rest_options, rest_scopes);
+          await rest_session.jwt(user.email, rest_options, rest_scopes, user.uaf);
           if (embed_session.authorized && rest_session.authorized) {
             // frontend requires user_id & embed_token
              const {
@@ -94,12 +100,13 @@ export const authOptions = {
             const { user_id: rest_id, rest_key } = rest_session;
             // add members to a new tableau object in user
             user.tableau = {
-              username, user_id, embed_token, rest_id, rest_key, site_id, site, created, expires,
+              username, user_id, embed_token, rest_id, rest_key, site_id, site, created, expires
             };
           }
 
           // Return false to display a default error message
           return user.tableau ? user : false;
+          
         } else {
           return false;
         }
@@ -138,9 +145,9 @@ export const authOptions = {
         token.demo = user.demo;
         token.role = user.role; // tableau session object
         token.vector_store = user.vector_store; // tableau session object
-        token.uaf = user.uaf; // user attribute function claims
+        token.uaf = user.uaf || {}; // Ensure uaf is set, even if it's empty
         token.tableau = user.tableau; // tableau session object
-
+        
       }
       return token;
     },

@@ -21,7 +21,7 @@ import {
 
 export function UserMenu(props) {
   const { src } = props;
-  const avatar = src ? src : 'img/users/mackenzie_day.png';
+  const [avatar, setAvatar] = useState('img/users/mackenzie_day.png')
   const [user, setUser] = useState(undefined);
   // only 2 states: loading and authenticated https://next-auth.js.org/getting-started/client#require-session
   const { status, data } = useSession({ required: false });
@@ -29,6 +29,7 @@ export function UserMenu(props) {
   useEffect(() => {
     if (status === 'authenticated') {
       setUser(data.user.name);
+      setAvatar(data.user.image)
     }
   }, [status, data]);
 
@@ -98,12 +99,18 @@ const Trigger = (props) => {
 
 
 const Label = (props) => {
+  const { data: session_data } = useSession();
+  
+  // Use session data or fallback to props if provided
+  const userName = session_data?.user?.name || props.name || "User";
+  const userEmail = session_data?.user?.email || props.email || "user@example.com";
+  
   return (
     <DropdownMenuLabel className="font-normal">
       <div className="flex flex-col space-y-1">
-        <p className="text-sm font-medium leading-none">Superstore Analytics</p>
+        <p className="text-sm font-medium leading-none">{userName}</p>
         <p className="text-xs leading-none text-muted-foreground">
-          mday@mail.com
+          {userEmail}
         </p>
       </div>
     </DropdownMenuLabel>

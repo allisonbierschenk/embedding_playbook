@@ -30,15 +30,17 @@ export const TableauAuth = forwardRef(function AuthLayer(props, ref) {
     isSuccess: isSessionSuccess,
     isError: isSessionError,
     isLoading: isSessionLoading
-  } = useTableauSession('a', 'superstore');
+  } = useTableauSession('na', 'none');
 
   if (isSessionError) {
     console.debug(sessionError);
   }
 
   if (isSessionSuccess) {
+    console.log("allison - user", user)
     embed_token = user.embed_token;
   }
+  console.log("embed_token", embed_token)
 
   return (
     <div>
